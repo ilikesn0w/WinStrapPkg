@@ -1,4 +1,4 @@
-
+[![Build](https://github.com/ilikesn0w/WinStrapPkg/actions/workflows/build.yml/badge.svg)](https://github.com/ilikesn0w/WinStrapPkg/actions/workflows/build.yml)
 -----
 Load SSDT-PCI and apply BUF0 to BUF1 patch before starting Windows booter.
 
