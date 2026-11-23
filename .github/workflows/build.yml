@@ -1,0 +1,78 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+env:
+  DSC_PATH: WinStrapPkg/WinStrapPkg.dsc
+
+jobs:
+  build-macos:
+    name: macOS XCODE5
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        build_type: [DEBUG, RELEASE]
+        arch: [IA32, X64]
+    env:
+      TOOLCHAIN: XCODE5
+      PROJECT_TYPE: UEFI
+      JOB_TYPE: BUILD
+      HOMEBREW_NO_INSTALL_CLEANUP: 1
+      HOMEBREW_NO_AUTO_UPDATE: 1
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          brew trust aws/tap
+          brew install nasm ocmtoc pngcrush
+
+      - name: CI Bootstrap
+        run: |
+          src=$(/usr/bin/curl -LfsS https://raw.githubusercontent.com/acidanthera/ocbuild/master/ci-bootstrap.sh) && eval "$src" || exit 1
+
+      - name: Clone UDK, OpenCorePkg and WinStrapPkg
+        run: |
+          git clone --depth=1 https://github.com/acidanthera/audk UDK
+          cd UDK
+          git submodule update --init --recommend-shallow
+          rm -rf OpenCorePkg
+          git clone --depth=1 https://github.com/acidanthera/OpenCorePkg
+          git clone --depth=1 https://github.com/ilikesn0w/WinStrapPkg
+          . ./edksetup.sh
+          make -C BaseTools
+
+      - name: Add tools to path
+        run: |
+          echo "$GITHUB_WORKSPACE/UDK/BaseTools/Source/C/bin" >> $GITHUB_PATH
+
+      - name: Build WinStrapPkg
+        run: |
+          cd UDK
+          . ./edksetup.sh
+          build -a ${{ matrix.arch }} -b ${{ matrix.build_type }} -t ${{ env.TOOLCHAIN }} -p ${{ env.DSC_PATH }}
+
+      - name: Prepare Staging Area
+        run: |
+          mkdir -p dist/
+          cp UDK/Build/WinStrapPkg/${{ matrix.build_type }}_${{ env.TOOLCHAIN }}/${{ matrix.arch }}/WinStrap.efi dist/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: WinStrap-${{ matrix.arch }}-${{ env.TOOLCHAIN }}-${{ matrix.build_type }}
+          path: dist/
