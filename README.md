@@ -11,6 +11,12 @@ Load SSDT-PCI and apply BUF0 to BUF1 patch before starting Windows booter.
 
   If present rename `EFI\Microsoft\Boot\cdboot.efi` to `rcdboot.efi`, then place WinStrap in the same directory and call it cdboot.efi
 
+  The SSDT is built into the bin, so there's no need to place it anywhere separately.
+
+  Also, keep in mind that newer versions of Windows sometimes update the booter, so if you lose sound after an update, you’ll need to repeat the steps above.
+  > [!CAUTION]
+  >  This **cannot** be used on a Mac Pro, since I didn’t implement SecureBoot protection, and Windows could update the booter at any time.
+
 #### Credits
 
 - [Acidanthera](https://github.com/acidanthera), The HermitCrabs Lab and contributors for [OpenCorePkg](https://github.com/acidanthera/OpenCorePkg)
